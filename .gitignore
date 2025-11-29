@@ -1,0 +1,17 @@
+# Сборка
+*bin/
+*obj/
+
+# JetBrains Rider
+*.idea/
+*.sln.DotSettings.user
+*.sln.DotSettings
+
+# Проекты
+src/Shadowchats.*.Presentation/Properties
+*.json
+!*example.json
+*.pfx
+
+# GitHub Desktop
+.gitattributes
