@@ -11,21 +11,21 @@ public sealed class Order1 : BaseAggregate1
 {
     private Order1()
     {
-        Items = new ReadOnlyCollection<OrderItem>(new List<OrderItem>());
+        Items = new ReadOnlyCollection<OrderItem1>(new List<OrderItem1>());
         IsPaid = false;
         IsShipped = false;
-        _totalPrice = new Lazy<Money>(() => Items.Select(i => i.Total).Aggregate((a, b) => a.Add(b)));
+        _totalPrice = new Lazy<Money1>(() => Items.Select(i => i.Total).Aggregate((a, b) => a.Add(b)));
     }
 
-    private Order1(Guid id, ReadOnlyCollection<OrderItem> items, bool isPaid, bool isShipped) : base(id)
+    private Order1(Guid id, ReadOnlyCollection<OrderItem1> items, bool isPaid, bool isShipped) : base(id)
     {
         Items = items;
         IsPaid = isPaid;
         IsShipped = isShipped;
-        _totalPrice = new Lazy<Money>(() => Items.Select(i => i.Total).Aggregate((a, b) => a.Add(b)));
+        _totalPrice = new Lazy<Money1>(() => Items.Select(i => i.Total).Aggregate((a, b) => a.Add(b)));
     }
 
-    public static Order1 Create(Guid id, IEnumerable<OrderItem> items)
+    public static Order1 Create(Guid id, IEnumerable<OrderItem1> items)
     {
         var itemsList = items.ToList();
         if (itemsList.Count != 0)
@@ -56,15 +56,15 @@ public sealed class Order1 : BaseAggregate1
         IsShipped = true;
     }
 
-    public IReadOnlyList<OrderItem> Items { get; private set; }
+    public IReadOnlyList<OrderItem1> Items { get; private init; }
 
     public bool IsPaid { get; private set; }
 
     public bool IsShipped { get; private set; }
     
-    public Money TotalPrice => _totalPrice.Value;
+    public Money1 TotalPrice => _totalPrice.Value;
     
-    private readonly Lazy<Money> _totalPrice;
+    private readonly Lazy<Money1> _totalPrice;
 }
 
 // Реализация в условиях вакуума

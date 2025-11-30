@@ -2,7 +2,8 @@ namespace Shadowchats.Conversations.Domain.Enums;
 
 public enum Currency : byte
 {
-    Rub = 0,
-    Eur = 1,
-    Usd = 2
+    None = 0,
+    Rub = 1,
+    Eur = 2,
+    Usd = 3
 }
