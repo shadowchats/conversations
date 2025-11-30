@@ -14,7 +14,8 @@ public sealed class Order1 : BaseAggregate1
         Items = new ReadOnlyCollection<OrderItem1>(new List<OrderItem1>());
         IsPaid = false;
         IsShipped = false;
-        _totalPrice = new Lazy<Money1>(() => Items.Select(i => i.Total).Aggregate((a, b) => a.Add(b)));
+        _totalPrice = new Lazy<Money1>(() =>
+            Items.Any() ? Items.Select(i => i.Total).Aggregate((a, b) => a + b) : Money1.None);
     }
 
     private Order1(Guid id, ReadOnlyCollection<OrderItem1> items, bool isPaid, bool isShipped) : base(id)
@@ -22,13 +23,13 @@ public sealed class Order1 : BaseAggregate1
         Items = items;
         IsPaid = isPaid;
         IsShipped = isShipped;
-        _totalPrice = new Lazy<Money1>(() => Items.Select(i => i.Total).Aggregate((a, b) => a.Add(b)));
+        _totalPrice = new Lazy<Money1>(() => Items.Select(i => i.Total).Aggregate((a, b) => a + b));
     }
 
     public static Order1 Create(Guid id, IEnumerable<OrderItem1> items)
     {
         var itemsList = items.ToList();
-        if (itemsList.Count != 0)
+        if (itemsList.Count == 0)
             throw new InvariantViolationException("Order must contain at least one item.");
 
         var order = new Order1(id, itemsList.AsReadOnly(), false, false);
@@ -36,7 +37,7 @@ public sealed class Order1 : BaseAggregate1
 
         return order;
     }
-    
+
     public void MarkAsPaid()
     {
         if (IsPaid)
@@ -61,9 +62,9 @@ public sealed class Order1 : BaseAggregate1
     public bool IsPaid { get; private set; }
 
     public bool IsShipped { get; private set; }
-    
+
     public Money1 TotalPrice => _totalPrice.Value;
-    
+
     private readonly Lazy<Money1> _totalPrice;
 }
 
@@ -75,13 +76,13 @@ public sealed class Order : BaseAggregate
         Items = items;
         IsPaid = isPaid;
         IsShipped = isShipped;
-        _totalPrice = new Lazy<Money>(() => Items.Select(i => i.Total).Aggregate((a, b) => a.Add(b)));
+        _totalPrice = new Lazy<Money>(() => Items.Select(i => i.Total).Aggregate((a, b) => a + b));
     }
 
     public static Order Create(Guid id, IEnumerable<OrderItem> items)
     {
         var itemsList = items.ToList();
-        if (itemsList.Count != 0)
+        if (itemsList.Count == 0)
             throw new InvariantViolationException("Order must contain at least one item.");
 
         var order = new Order(id, itemsList.AsReadOnly(), false, false);
@@ -89,7 +90,7 @@ public sealed class Order : BaseAggregate
 
         return order;
     }
-    
+
     public void MarkAsPaid()
     {
         if (IsPaid)
@@ -114,8 +115,8 @@ public sealed class Order : BaseAggregate
     public bool IsPaid { get; private set; }
 
     public bool IsShipped { get; private set; }
-    
+
     public Money TotalPrice => _totalPrice.Value;
-    
+
     private readonly Lazy<Money> _totalPrice;
 }

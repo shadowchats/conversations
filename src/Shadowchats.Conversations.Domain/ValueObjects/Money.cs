@@ -1,5 +1,6 @@
 using Shadowchats.Conversations.Domain.Enums;
 using Shadowchats.Conversations.Domain.Exceptions;
+using Shadowchats.Conversations.Domain.Extensions;
 
 namespace Shadowchats.Conversations.Domain.ValueObjects;
 
@@ -22,14 +23,14 @@ public sealed record Money1
     {
         if (amount < 0)
             throw new InvariantViolationException("Amount must be >= 0.");
-        EnumsValidator.Validate(currency);
+        currency.EnsureValid();
         
         return new Money1(amount, currency);
     }
 
-    public Money1 Add(Money1 other) => Currency != other.Currency
+    public static Money1 operator +(Money1 left, Money1 right) => left.Currency != right.Currency
         ? throw new InvariantViolationException("Currencies must match.")
-        : new Money1(Amount + other.Amount, Currency);
+        : new Money1(left.Amount + right.Amount, left.Currency);
     
     public decimal Amount { get; private init; }
     
@@ -51,14 +52,14 @@ public sealed record Money
     {
         if (amount < 0)
             throw new InvariantViolationException("Amount must be >= 0.");
-        EnumsValidator.Validate(currency);
+        currency.EnsureValid();
 
         return new Money(amount, currency);
     }
 
-    public Money Add(Money other) => Currency != other.Currency
+    public static Money operator +(Money left, Money right) => left.Currency != right.Currency
         ? throw new InvariantViolationException("Currencies must match.")
-        : new Money(Amount + other.Amount, Currency);
+        : new Money(left.Amount + right.Amount, left.Currency);
 
     public decimal Amount { get; }
 
