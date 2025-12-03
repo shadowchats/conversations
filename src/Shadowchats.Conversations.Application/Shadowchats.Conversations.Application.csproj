@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Shadowchats.Conversations.Domain\Shadowchats.Conversations.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="DomainEventHandlers\" />
+      <Folder Include="Enums\" />
+      <Folder Include="IntegrationEvents\" />
+      <Folder Include="Jobs\" />
+      <Folder Include="UseCases\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MediatR" Version="13.1.0" />
+    </ItemGroup>
+
+</Project>
