@@ -12,10 +12,8 @@
 
     <ItemGroup>
       <Folder Include="DomainEventHandlers\" />
-      <Folder Include="Enums\" />
       <Folder Include="IntegrationEvents\" />
       <Folder Include="Jobs\" />
-      <Folder Include="UseCases\" />
     </ItemGroup>
 
     <ItemGroup>

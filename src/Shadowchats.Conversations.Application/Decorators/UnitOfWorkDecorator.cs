@@ -1,45 +1,34 @@
 using MediatR;
+using Shadowchats.Conversations.Application.Interfaces;
 
 namespace Shadowchats.Conversations.Application.Decorators;
 
 public class UnitOfWorkDecorator<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
 {
-    public UnitOfWorkDecorator(IUnitOfWork unitOfWork, IServiceProvider services, IMessageHandler<TMessage, TResult> decorated)
+    public UnitOfWorkDecorator(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
-        _services = services;
-        _decorated = decorated;
     }
-
-    public async Task<TResult> Handle(TMessage message)
+    
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        var (dbContextKeyType, transactionMode) = message switch
-        {
-            IQuery<TResult>   => (typeof(AuthenticationDbContextReadOnly), IUnitOfWork.TransactionMode.None),
-            ICommand<TResult> => (typeof(AuthenticationDbContextReadWrite), IUnitOfWork.TransactionMode.WithReadCommitted),
-            _ => throw new BugException("Unhandled message type.")
-        };
-
-        await _unitOfWork.Begin((IAuthenticationDbContext)_services.GetRequiredService(dbContextKeyType),
-            transactionMode);
+        await _unitOfWork.Begin(request.GetType(), cancellationToken);
 
         try
         {
-            var result = await _decorated.Handle(message);
+            var response = await next(cancellationToken);
 
-            await _unitOfWork.End(IUnitOfWork.Outcome.Success);
+            await _unitOfWork.Commit(cancellationToken);
             
-            return result;
+            return response;
         }
         catch
         {
-            await _unitOfWork.End(IUnitOfWork.Outcome.Failure);
+            await _unitOfWork.Rollback(cancellationToken);
             
             throw;
         }
     }
 
     private readonly IUnitOfWork _unitOfWork;
-    
-    private readonly IServiceProvider _services;
 }
