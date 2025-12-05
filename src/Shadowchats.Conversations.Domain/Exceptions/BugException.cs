@@ -2,5 +2,7 @@ namespace Shadowchats.Conversations.Domain.Exceptions;
 
 public sealed class BugException : BaseException
 {
-    public BugException(string message) : base(message) { }
+    public BugException() : base(DefaultMessage) { }
+    
+    private const string DefaultMessage = "Bug detected: debug and check logs.";
 }

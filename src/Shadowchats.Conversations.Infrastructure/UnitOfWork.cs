@@ -1,106 +1,159 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Shadowchats.Conversations.Application.Interfaces;
+using Shadowchats.Conversations.Application.UseCases.Test1;
+using Shadowchats.Conversations.Application.UseCases.Test2;
+using Shadowchats.Conversations.Application.UseCases.Test3;
 using Shadowchats.Conversations.Domain.Exceptions;
-using Shadowchats.Conversations.Infrastructure.ApplicationDbContext;
-using Shadowchats.Conversations.Infrastructure.Enums;
 
 namespace Shadowchats.Conversations.Infrastructure;
 
-public class UnitOfWork : IUnitOfWork, IAsyncDisposable
+public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
 {
-    public UnitOfWork(UnitOfWorkPolicy policy, IDbContextFactory<ReadOnlyApplicationDbContext> readOnlyFactory,
+    private enum State : byte
+    {
+        NotStarted = 0,
+        Begun = 1,
+        Completed = 2,
+    }
+    
+    public UnitOfWork(IDbContextFactory<ReadOnlyApplicationDbContext> readOnlyFactory,
         IDbContextFactory<ReadWriteApplicationDbContext> readWriteFactory)
     {
-        _policy = policy;
         _readOnlyFactory = readOnlyFactory;
         _readWriteFactory = readWriteFactory;
+        _state = State.NotStarted;
         _dbContext = null;
-        _transaction = null;
         _isDisposed = false;
     }
 
     public async Task Begin(Type requestType, CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, nameof(UnitOfWork));
-        
-        if (_dbContext is not null)
-            throw new BugException("Is already begun.");
+        EnsureNotDisposed();
+    
+        if (_state != State.NotStarted)
+            throw new BugException();
 
-        var dbContextType = _policy.GetDbContextTypeMap(requestType);
-        _dbContext = dbContextType switch
+        BaseApplicationDbContext? dbContext = null;
+        try
         {
-            ApplicationDbContextType.ReadOnly => await _readOnlyFactory.CreateDbContextAsync(cancellationToken),
-            ApplicationDbContextType.ReadWrite => await _readWriteFactory.CreateDbContextAsync(cancellationToken),
-            _ => throw new BugException($"The ApplicationDbContextType {dbContextType} is not supported.")
-        };
+            var dbContextType = UnitOfWorkPolicy.GetDbContextType(requestType);
+            dbContext = dbContextType switch
+            {
+                ApplicationDbContextType.ReadOnly => 
+                    await _readOnlyFactory.CreateDbContextAsync(cancellationToken),
+                ApplicationDbContextType.ReadWrite => 
+                    await _readWriteFactory.CreateDbContextAsync(cancellationToken),
+                _ => throw new BugException()
+            };
 
-        if (_policy.RequiresTransaction(requestType))
-            _transaction = await _dbContext.BeginTransaction(_policy.GetIsolationLevel(requestType), cancellationToken);
-        else
-            _transaction = null;
+            if (UnitOfWorkPolicy.RequiresTransaction(requestType))
+                await dbContext.Database.BeginTransactionAsync(
+                    UnitOfWorkPolicy.GetIsolationLevel(requestType), cancellationToken);
+        
+            _dbContext = dbContext;
+            _state = State.Begun;
+        }
+        catch
+        {
+            if (dbContext is not null)
+                await dbContext.DisposeAsync();
+            
+            throw;
+        }
     }
 
     public async Task Commit(CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, nameof(UnitOfWork));
+        EnsureNotDisposed();
         
-        if (_dbContext is null)
-            throw new BugException("Is not yet begun or is already ended.");
+        if (_state != State.Begun)
+            throw new BugException();
 
-        if (_transaction is not null)
-            await _transaction.CommitAsync(cancellationToken);
+        if (_dbContext!.Database.CurrentTransaction is not null)
+            await _dbContext.Database.CommitTransactionAsync(cancellationToken);
+        
+        _state = State.Completed;
     }
 
     public async Task Rollback(CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, nameof(UnitOfWork));
+        EnsureNotDisposed();
         
-        if (_dbContext is null)
-            throw new BugException("Is not yet begun or is already ended.");
+        if (_state != State.Begun)
+            throw new BugException();
 
-        if (_transaction is not null)
-            await _transaction.RollbackAsync(cancellationToken);
+        if (_dbContext!.Database.CurrentTransaction is not null)
+            await _dbContext.Database.RollbackTransactionAsync(cancellationToken);
+        
+        _state = State.Completed;
     }
+    
+    private void EnsureNotDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, nameof(UnitOfWork));
 
     public async ValueTask DisposeAsync()
     {
         if (_isDisposed)
             return;
 
-        if (_transaction is not null)
-        {
-            await _transaction.DisposeAsync();
-            _transaction = null;
-        }
-        if (_dbContext is not null)
-        {
-            await _dbContext.DisposeAsync();
-            _dbContext = null;
-        }
-        
         _isDisposed = true;
+
+        if (_dbContext is not null) 
+            await _dbContext.DisposeAsync();
     }
 
     public BaseApplicationDbContext DbContext
     {
         get
         {
-            ObjectDisposedException.ThrowIf(_isDisposed, nameof(UnitOfWork));
+            EnsureNotDisposed();
             
-            return _dbContext ?? throw new BugException("Is not yet begun or is already ended.");
+            return _state != State.Begun ? throw new BugException() : _dbContext!;
         }
     }
-    
-    private readonly UnitOfWorkPolicy _policy;
 
     private readonly IDbContextFactory<ReadOnlyApplicationDbContext> _readOnlyFactory;
 
     private readonly IDbContextFactory<ReadWriteApplicationDbContext> _readWriteFactory;
 
+    private State _state;
+    
     private BaseApplicationDbContext? _dbContext;
 
-    private IDbContextTransaction? _transaction;
-
     private bool _isDisposed;
+}
+
+file static class UnitOfWorkPolicy
+{
+    public static bool RequiresTransaction(Type requestType) => !RequiresTransactionMap.TryGetValue(requestType, out var value) ? throw new BugException() : value;
+
+    public static IsolationLevel GetIsolationLevel(Type requestType) => !IsolationLevelMap.TryGetValue(requestType, out var value) ? throw new BugException() : value;
+
+    public static ApplicationDbContextType GetDbContextType(Type requestType) => !DbContextTypeMap.TryGetValue(requestType, out var value) ? throw new BugException() : value;
+
+    private static readonly Dictionary<Type, bool> RequiresTransactionMap = new()
+    {
+        { typeof(Test1Command), true },
+        { typeof(Test2Query), false },
+        { typeof(Test3Command), true }
+    };
+
+    private static readonly Dictionary<Type, IsolationLevel> IsolationLevelMap = new()
+    {
+        { typeof(Test1Command), IsolationLevel.ReadCommitted },
+        { typeof(Test3Command), IsolationLevel.ReadCommitted }
+    };
+
+    private static readonly Dictionary<Type, ApplicationDbContextType> DbContextTypeMap = new()
+    {
+        { typeof(Test1Command), ApplicationDbContextType.ReadWrite },
+        { typeof(Test2Query), ApplicationDbContextType.ReadOnly },
+        { typeof(Test3Command), ApplicationDbContextType.ReadWrite }
+    };
+}
+
+file enum ApplicationDbContextType : byte
+{
+    ReadOnly = 0,
+    ReadWrite = 1
 }

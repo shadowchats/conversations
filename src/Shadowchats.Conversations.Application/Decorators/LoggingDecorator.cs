@@ -15,7 +15,7 @@ public sealed class LoggingDecorator<TRequest, TResponse> : IPipelineBehavior<TR
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Stage: {Stage}; RequestName: {RequestName}; RequestPayload: {@RequestPayload}",
+            _logger.LogInformation("Stage: {Stage}; RequestName: {RequestName}; RequestPayload: {@RequestPayload}.",
                 "Start", _requestName, request);
 
         try
@@ -23,21 +23,21 @@ public sealed class LoggingDecorator<TRequest, TResponse> : IPipelineBehavior<TR
             var response = await next(cancellationToken);
 
             if (_logger.IsEnabled(LogLevel.Information)) 
-                _logger.LogInformation("Stage: {Stage}. Response: {@Response}", "Success", response);
+                _logger.LogInformation("Stage: {Stage}. Response: {@Response}.", "Success", response);
 
             return response;
         }
         catch (BaseException expectedException) when (expectedException is not BugException)
         {
             if (_logger.IsEnabled(LogLevel.Information)) 
-                _logger.LogInformation(expectedException, "Stage: {Stage}", "ExpectedFailure");
+                _logger.LogInformation(expectedException, "Stage: {Stage}.", "ExpectedFailure");
 
             throw;
         }
         catch (Exception unexpectedException)
         {
             if (_logger.IsEnabled(LogLevel.Error)) 
-                _logger.LogError(unexpectedException, "Stage: {Stage}", "UnexpectedFailure");
+                _logger.LogError(unexpectedException, "Stage: {Stage}.", "UnexpectedFailure");
 
             throw;
         }
