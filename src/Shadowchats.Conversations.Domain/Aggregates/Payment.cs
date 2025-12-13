@@ -1,7 +1,7 @@
 using Shadowchats.Conversations.Domain.DomainEvents;
 using Shadowchats.Conversations.Domain.Enums;
 using Shadowchats.Conversations.Domain.Exceptions;
-using Shadowchats.Conversations.Domain.Extensions;
+using Shadowchats.Conversations.Domain.Validators;
 using Shadowchats.Conversations.Domain.ValueObjects;
 
 namespace Shadowchats.Conversations.Domain.Aggregates;
@@ -27,7 +27,7 @@ public sealed class Payment1 : BaseAggregate1
     {
         if (amount.Amount <= 0)
             throw new InvariantViolationException("Payment amount must be positive.");
-        method.EnsureValid();
+        EnumsValidator.EnsureValid(method);
         
         return new Payment1(id, orderId, amount, method);
     }
@@ -64,7 +64,7 @@ public sealed class Payment : BaseAggregate
     {
         if (amount.Amount <= 0)
             throw new InvariantViolationException("Payment amount must be positive.");
-        method.EnsureValid();
+        EnumsValidator.EnsureValid(method);
         
         return new Payment(id, orderId, amount, method);
     }

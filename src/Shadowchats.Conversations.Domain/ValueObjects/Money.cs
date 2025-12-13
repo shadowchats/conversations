@@ -1,6 +1,6 @@
 using Shadowchats.Conversations.Domain.Enums;
 using Shadowchats.Conversations.Domain.Exceptions;
-using Shadowchats.Conversations.Domain.Extensions;
+using Shadowchats.Conversations.Domain.Validators;
 
 namespace Shadowchats.Conversations.Domain.ValueObjects;
 
@@ -23,7 +23,7 @@ public sealed record Money1
     {
         if (amount < 0)
             throw new InvariantViolationException("Amount must be >= 0.");
-        currency.EnsureValid();
+        EnumsValidator.EnsureValid(currency);
         
         return new Money1(amount, currency);
     }
@@ -52,7 +52,7 @@ public sealed record Money
     {
         if (amount < 0)
             throw new InvariantViolationException("Amount must be >= 0.");
-        currency.EnsureValid();
+        EnumsValidator.EnsureValid(currency);
 
         return new Money(amount, currency);
     }

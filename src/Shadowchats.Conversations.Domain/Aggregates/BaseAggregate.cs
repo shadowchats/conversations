@@ -1,4 +1,4 @@
-using Shadowchats.Conversations.Domain.DomainEvents;
+using MediatR;
 using Shadowchats.Conversations.Domain.Entities;
 
 namespace Shadowchats.Conversations.Domain.Aggregates;
@@ -18,15 +18,13 @@ public abstract class BaseAggregate1 : BaseEntity1
         DomainEvents = _domainEvents.AsReadOnly();
     }
 
-    protected void AddDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+    protected void AddDomainEvent(INotification domainEvent) => _domainEvents.Add(domainEvent);
 
-    protected void RemoveDomainEvent(IDomainEvent domainEvent) => _domainEvents.Remove(domainEvent);
-
-    protected void ClearDomainEvents() => _domainEvents.Clear();
+    public void ClearDomainEvents() => _domainEvents.Clear();
     
-    public IReadOnlyList<IDomainEvent> DomainEvents { get; }
+    public IReadOnlyList<INotification> DomainEvents { get; }
 
-    private readonly List<IDomainEvent> _domainEvents;
+    private readonly List<INotification> _domainEvents;
 }
 
 // Реализация в условиях вакуума
@@ -38,13 +36,11 @@ public abstract class BaseAggregate : BaseEntity
         DomainEvents = _domainEvents.AsReadOnly();
     }
 
-    protected void AddDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+    protected void AddDomainEvent(INotification domainEvent) => _domainEvents.Add(domainEvent);
 
-    protected void RemoveDomainEvent(IDomainEvent domainEvent) => _domainEvents.Remove(domainEvent);
-
-    protected void ClearDomainEvents() => _domainEvents.Clear();
+    public void ClearDomainEvents() => _domainEvents.Clear();
     
-    public IReadOnlyList<IDomainEvent> DomainEvents { get; }
+    public IReadOnlyList<INotification> DomainEvents { get; }
 
-    private readonly List<IDomainEvent> _domainEvents;
+    private readonly List<INotification> _domainEvents;
 }

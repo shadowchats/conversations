@@ -1,6 +1,8 @@
+using MediatR;
+
 namespace Shadowchats.Conversations.Domain.DomainEvents;
 
-public sealed record OrderPlaced : IDomainEvent
+public sealed record OrderPlaced : INotification
 {
     public OrderPlaced(Guid orderId)
     {

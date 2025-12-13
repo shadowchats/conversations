@@ -1,6 +1,8 @@
+using MediatR;
+
 namespace Shadowchats.Conversations.Domain.DomainEvents;
 
-public sealed record PaymentCompleted : IDomainEvent
+public sealed record PaymentCompleted : INotification
 {
     public PaymentCompleted(Guid paymentId, Guid orderId)
     {
