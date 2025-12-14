@@ -1,10 +1,13 @@
 using MediatR;
+using Shadowchats.Conversations.Application.Attributes;
+using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Domain.Aggregates;
 using Shadowchats.Conversations.Domain.ValueObjects;
 
 namespace Shadowchats.Conversations.Application.UseCases;
 
+[UnitOfWork(DataAccessMode.ReadWrite, TransactionMode.ReadCommitted)]
 public sealed record CreatePaymentCommand : IRequest<CreatePaymentResponse>
 {
     public required Guid PaymentId { get; init; }

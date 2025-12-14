@@ -2,9 +2,9 @@ using MediatR;
 
 namespace Shadowchats.Conversations.Domain.DomainEvents;
 
-public sealed record OrderPaid : INotification
+public sealed record OrderPaidDomainEvent : INotification
 {
-    public OrderPaid(Guid orderId)
+    public OrderPaidDomainEvent(Guid orderId)
     {
         OrderId = orderId;
     }

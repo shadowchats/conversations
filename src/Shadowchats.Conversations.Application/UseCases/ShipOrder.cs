@@ -1,9 +1,12 @@
 using MediatR;
+using Shadowchats.Conversations.Application.Attributes;
+using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Domain.Exceptions;
 
 namespace Shadowchats.Conversations.Application.UseCases;
 
+[UnitOfWork(DataAccessMode.ReadWrite, TransactionMode.ReadCommitted)]
 public sealed record ShipOrderCommand : IRequest<Unit>
 {
     public required Guid OrderId { get; init; }

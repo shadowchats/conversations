@@ -1,13 +1,15 @@
 using MediatR;
+using Shadowchats.Conversations.Application.Attributes;
+using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Application.Mappers;
 using Shadowchats.Conversations.Domain.Aggregates;
 using Shadowchats.Conversations.Domain.Entities;
-using Shadowchats.Conversations.Domain.Enums;
 using Shadowchats.Conversations.Domain.ValueObjects;
 
 namespace Shadowchats.Conversations.Application.UseCases;
 
+[UnitOfWork(DataAccessMode.ReadWrite, TransactionMode.ReadCommitted)]
 public sealed record CreateOrderCommand : IRequest<CreateOrderResponse>
 {
     public required Guid OrderId { get; init; }

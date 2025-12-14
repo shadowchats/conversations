@@ -38,7 +38,7 @@ public sealed class Payment1 : BaseAggregate1
             throw new InvariantViolationException("Payment is already completed.");
 
         IsCompleted = true;
-        AddDomainEvent(new PaymentCompleted(Id, OrderId));
+        AddDomainEvent(new PaymentCompletedDomainEvent(Id, OrderId));
     }
     
     public Guid OrderId { get; private init; }
@@ -75,7 +75,7 @@ public sealed class Payment : BaseAggregate
             throw new InvariantViolationException("Payment is already completed.");
 
         IsCompleted = true;
-        AddDomainEvent(new PaymentCompleted(Id, OrderId));
+        AddDomainEvent(new PaymentCompletedDomainEvent(Id, OrderId));
     }
     
     public Guid OrderId { get; }
