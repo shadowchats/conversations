@@ -1,4 +1,5 @@
 using MediatR;
+using Shadowchats.Conversations.Application.IntegrationEvents;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Domain.DomainEvents;
 using Shadowchats.Conversations.Domain.Exceptions;
@@ -7,7 +8,7 @@ namespace Shadowchats.Conversations.Application.DomainEventHandlers;
 
 public sealed class PaymentCompletedHandler : INotificationHandler<PaymentCompletedDomainEvent>
 {
-    public PaymentCompletedHandler(IOrderRepository orderRepository, IPersistenceContext persistenceContext, IIntegrationEventPublisher integrationEventPublisher)
+    public PaymentCompletedHandler(IOrderRepository orderRepository, IOutboxIntegrationEventRepository<OrderPaidOutboxIntegrationEventPayload> , IPersistenceContext persistenceContext)
     {
         _orderRepository = orderRepository;
         _persistenceContext = persistenceContext;
@@ -26,7 +27,7 @@ public sealed class PaymentCompletedHandler : INotificationHandler<PaymentComple
 
         // Публикация интеграционного события для внешних систем
         await _integrationEventPublisher.Publish(
-            new IntegrationEvents.OrderPaidIntegrationEvent(
+            new IntegrationEvents.OrderPaidOutboxIntegrationEvent(
                 notification.OrderId,
                 notification.PaymentId,
                 DateTime.UtcNow
