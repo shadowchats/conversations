@@ -3,16 +3,19 @@ using Shadowchats.Conversations.Application.IntegrationEvents;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Domain.DomainEvents;
 using Shadowchats.Conversations.Domain.Exceptions;
+using Shadowchats.Conversations.Domain.Interfaces;
 
 namespace Shadowchats.Conversations.Application.DomainEventHandlers;
 
 public sealed class PaymentCompletedHandler : INotificationHandler<PaymentCompletedDomainEvent>
 {
-    public PaymentCompletedHandler(IOrderRepository orderRepository, IOutboxIntegrationEventRepository<OrderPaidOutboxIntegrationEventPayload> , IPersistenceContext persistenceContext)
+    public PaymentCompletedHandler(IGuidGenerator guidGenerator, IOrderRepository orderRepository,
+        IOutboxIntegrationEventRepository outboxIntegrationEventRepository, IPersistenceContext persistenceContext)
     {
+        _guidGenerator = guidGenerator;
         _orderRepository = orderRepository;
+        _outboxIntegrationEventRepository = outboxIntegrationEventRepository;
         _persistenceContext = persistenceContext;
-        _integrationEventPublisher = integrationEventPublisher;
     }
 
     public async Task Handle(PaymentCompletedDomainEvent notification, CancellationToken cancellationToken)
@@ -20,24 +23,21 @@ public sealed class PaymentCompletedHandler : INotificationHandler<PaymentComple
         var order = await _orderRepository.Find(o => o.Id == notification.OrderId, cancellationToken);
         if (order == null)
             throw new InvariantViolationException("Order does not exist.");
-        
         order.MarkAsPaid();
 
-        await _persistenceContext.SaveChanges(cancellationToken);
+        var orderPaidIntegrationEvent = new OrderPaidIntegrationEvent(notification.OrderId, notification.PaymentId);
+        var outboxIntegrationEventContainer =
+            OutboxIntegrationEventContainer.Create(_guidGenerator, orderPaidIntegrationEvent);
+        await _outboxIntegrationEventRepository.Add(outboxIntegrationEventContainer, cancellationToken);
 
-        // Публикация интеграционного события для внешних систем
-        await _integrationEventPublisher.Publish(
-            new IntegrationEvents.OrderPaidOutboxIntegrationEvent(
-                notification.OrderId,
-                notification.PaymentId,
-                DateTime.UtcNow
-            ),
-            cancellationToken);
+        await _persistenceContext.SaveChanges(cancellationToken);
     }
-    
+
+    private readonly IGuidGenerator _guidGenerator;
+
     private readonly IOrderRepository _orderRepository;
-    
+
     private readonly IPersistenceContext _persistenceContext;
-    
-    private readonly IIntegrationEventPublisher _integrationEventPublisher;
+
+    private readonly IOutboxIntegrationEventRepository _outboxIntegrationEventRepository;
 }
