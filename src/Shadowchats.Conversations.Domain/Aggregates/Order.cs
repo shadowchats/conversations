@@ -33,7 +33,6 @@ public sealed class Order1 : BaseAggregate1
             throw new InvariantViolationException("Order must contain at least one item.");
 
         var order = new Order1(id, itemsList.AsReadOnly(), false, false);
-        order.AddDomainEvent(new OrderPlacedDomainEvent(order.Id));
 
         return order;
     }
@@ -44,7 +43,6 @@ public sealed class Order1 : BaseAggregate1
             throw new InvariantViolationException("Order is already paid.");
 
         IsPaid = true;
-        AddDomainEvent(new OrderPaidDomainEvent(Id));
     }
 
     public void Ship()
@@ -86,7 +84,6 @@ public sealed class Order : BaseAggregate
             throw new InvariantViolationException("Order must contain at least one item.");
 
         var order = new Order(id, itemsList.AsReadOnly(), false, false);
-        order.AddDomainEvent(new OrderPlacedDomainEvent(order.Id));
 
         return order;
     }
@@ -97,7 +94,6 @@ public sealed class Order : BaseAggregate
             throw new InvariantViolationException("Order is already paid.");
 
         IsPaid = true;
-        AddDomainEvent(new OrderPaidDomainEvent(Id));
     }
 
     public void Ship()

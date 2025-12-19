@@ -1,8 +1,6 @@
-using MediatR;
-
 namespace Shadowchats.Conversations.Application.IntegrationEvents;
 
-public sealed record OrderPaidIntegrationEvent : INotification
+public sealed record OrderPaidIntegrationEvent : IIntegrationEvent
 {
     private OrderPaidIntegrationEvent()
     {
@@ -19,4 +17,8 @@ public sealed record OrderPaidIntegrationEvent : INotification
     public Guid OrderId { get; private set; }
 
     public Guid PaymentId { get; private set; }
+    
+    string IIntegrationEvent.EventType => EventType;
+    
+    public const string EventType = "OrderPaid";
 }

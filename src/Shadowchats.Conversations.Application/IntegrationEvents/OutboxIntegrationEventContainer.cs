@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using MediatR;
 using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Domain.Exceptions;
 using Shadowchats.Conversations.Domain.Interfaces;
@@ -13,13 +12,13 @@ public sealed class OutboxIntegrationEventContainer : BaseIntegrationEventContai
         Status = OutboxIntegrationEventStatus.None;
     }
 
-    private OutboxIntegrationEventContainer(Guid id, string traceparent, string eventType, INotification @event,
+    private OutboxIntegrationEventContainer(Guid id, string traceparent, string eventType, IIntegrationEvent @event,
         OutboxIntegrationEventStatus status) : base(id, traceparent, eventType, @event)
     {
         Status = status;
     }
 
-    public static OutboxIntegrationEventContainer Create(IGuidGenerator guidGenerator, INotification @event) => new(guidGenerator.Generate(), Activity.Current?.Id ?? throw new BugException(), @event.GetType().Name, @event, OutboxIntegrationEventStatus.Pending);
+    public static OutboxIntegrationEventContainer Create(IGuidGenerator guidGenerator, IIntegrationEvent @event) => new(guidGenerator.Generate(), Activity.Current?.Id ?? throw new BugException(), @event.EventType, @event, OutboxIntegrationEventStatus.Pending);
 
     public OutboxIntegrationEventStatus Status { get; private set; }
 }

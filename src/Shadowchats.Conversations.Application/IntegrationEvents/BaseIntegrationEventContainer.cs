@@ -4,7 +4,7 @@ namespace Shadowchats.Conversations.Application.IntegrationEvents;
 
 public abstract class BaseIntegrationEventContainer
 {
-    protected BaseIntegrationEventContainer(Guid id, string traceparent, string eventType, INotification @event)
+    protected BaseIntegrationEventContainer(Guid id, string traceparent, string eventType, IIntegrationEvent @event)
     {
         Id = id;
         Traceparent = traceparent;
@@ -18,5 +18,5 @@ public abstract class BaseIntegrationEventContainer
     
     public string EventType { get; private set; }
     
-    public INotification Event { get; private set; }
+    public IIntegrationEvent Event { get; private set; }
 }
