@@ -36,9 +36,10 @@ public sealed record CreateOrderResponse
 
 public sealed class CreateOrderHandler : IRequestHandler<CreateOrderCommand, CreateOrderResponse>
 {
-    public CreateOrderHandler(IGuidGenerator guidGenerator, IOrderRepository orderRepository, IPersistenceContext persistenceContext)
+    public CreateOrderHandler(IGuidGenerator guidGenerator, IDateTimeProvider dateTimeProvider, IOrderRepository orderRepository, IPersistenceContext persistenceContext)
     {
         _guidGenerator = guidGenerator;
+        _dateTimeProvider = dateTimeProvider;
         _orderRepository = orderRepository;
         _persistenceContext = persistenceContext;
     }
@@ -52,7 +53,7 @@ public sealed class CreateOrderHandler : IRequestHandler<CreateOrderCommand, Cre
             Money.Create(dto.Amount, EnumsMapper.MapCurrency(dto.Currency))
         )).ToList();
 
-        var order = Order.Create(_guidGenerator, request.BuyerId, items);
+        var order = Order.Create(_guidGenerator, _dateTimeProvider, request.BuyerId, items);
         await _orderRepository.Add(order, cancellationToken);
         await _persistenceContext.SaveChanges(cancellationToken);
         
@@ -60,6 +61,8 @@ public sealed class CreateOrderHandler : IRequestHandler<CreateOrderCommand, Cre
     }
     
     private readonly IGuidGenerator _guidGenerator;
+    
+    private readonly IDateTimeProvider _dateTimeProvider;
     
     private readonly IOrderRepository _orderRepository;
     

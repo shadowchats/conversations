@@ -7,7 +7,7 @@ using Shadowchats.Conversations.Domain.Interfaces;
 
 namespace Shadowchats.Conversations.Application.DomainEventHandlers;
 
-public sealed class PaymentCompletedHandler : INotificationHandler<PaymentCompletedDomainEvent>
+public sealed class PaymentCompletedHandler : IRequestHandler<PaymentCompletedDomainEvent, Unit>
 {
     public PaymentCompletedHandler(IGuidGenerator guidGenerator, IOrderRepository orderRepository,
         IOutboxIntegrationEventRepository outboxIntegrationEventRepository, IPersistenceContext persistenceContext)
@@ -18,7 +18,7 @@ public sealed class PaymentCompletedHandler : INotificationHandler<PaymentComple
         _persistenceContext = persistenceContext;
     }
 
-    public async Task Handle(PaymentCompletedDomainEvent notification, CancellationToken cancellationToken)
+    public async Task<Unit> Handle(PaymentCompletedDomainEvent notification, CancellationToken cancellationToken)
     {
         var order = await _orderRepository.Find(o => o.Id == notification.OrderId, cancellationToken);
         if (order == null)
@@ -31,6 +31,8 @@ public sealed class PaymentCompletedHandler : INotificationHandler<PaymentComple
         await _outboxIntegrationEventRepository.Add(outboxIntegrationEventContainer, cancellationToken);
 
         await _persistenceContext.SaveChanges(cancellationToken);
+        
+        return Unit.Value;
     }
 
     private readonly IGuidGenerator _guidGenerator;

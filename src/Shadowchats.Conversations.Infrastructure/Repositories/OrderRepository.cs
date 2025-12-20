@@ -20,5 +20,10 @@ public sealed class OrderRepository : IOrderRepository
         .Aggregate<Expression<Func<Order, object>>, IQueryable<Order>>(_unitOfWork.DbContext.Orders,
             (current, include) => current.Include(include)).FirstOrDefaultAsync(predicate, cancellationToken);
 
+    public Task<List<Order>> FindAll(Expression<Func<Order, bool>> predicate, CancellationToken cancellationToken,
+        params Expression<Func<Order, object>>[] includes) => includes
+        .Aggregate<Expression<Func<Order, object>>, IQueryable<Order>>(_unitOfWork.DbContext.Orders,
+            (current, include) => current.Include(include)).Where(predicate).ToListAsync(cancellationToken);
+
     private readonly UnitOfWork _unitOfWork;
 }

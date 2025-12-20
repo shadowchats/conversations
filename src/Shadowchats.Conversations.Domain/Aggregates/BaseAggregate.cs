@@ -17,11 +17,11 @@ public abstract class BaseAggregate : BaseEntity
         DomainEvents = _domainEvents.AsReadOnly();
     }
 
-    protected void AddDomainEvent(INotification domainEvent) => _domainEvents.Add(domainEvent);
+    protected void AddDomainEvent(IRequest<Unit> domainEvent) => _domainEvents.Add(domainEvent);
 
     public void ClearDomainEvents() => _domainEvents.Clear();
     
-    public IReadOnlyList<INotification> DomainEvents { get; }
+    public IReadOnlyList<IRequest<Unit>> DomainEvents { get; }
 
-    private readonly List<INotification> _domainEvents;
+    private readonly List<IRequest<Unit>> _domainEvents;
 }

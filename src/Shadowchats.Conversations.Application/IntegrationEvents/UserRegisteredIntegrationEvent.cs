@@ -23,7 +23,7 @@ public sealed record UserRegisteredIntegrationEvent : IIntegrationEvent
     public const string EventType = "UserRegistered";
 }
 
-public sealed class UserRegisteredIntegrationEventHandler : INotificationHandler<UserRegisteredIntegrationEvent>
+public sealed class UserRegisteredIntegrationEventHandler : IRequestHandler<UserRegisteredIntegrationEvent, Unit>
 {
     public UserRegisteredIntegrationEventHandler(IBuyerRepository buyerRepository, IPersistenceContext persistenceContext)
     {
@@ -31,11 +31,13 @@ public sealed class UserRegisteredIntegrationEventHandler : INotificationHandler
         _persistenceContext = persistenceContext;
     }
 
-    public async Task Handle(UserRegisteredIntegrationEvent evt, CancellationToken cancellationToken)
+    public async Task<Unit> Handle(UserRegisteredIntegrationEvent evt, CancellationToken cancellationToken)
     {
         var buyer = new Buyer(evt.UserId);
         await _buyerRepository.Add(buyer, cancellationToken);
         await _persistenceContext.SaveChanges(cancellationToken);
+        
+        return Unit.Value;
     }
     
     private readonly IBuyerRepository _buyerRepository;
