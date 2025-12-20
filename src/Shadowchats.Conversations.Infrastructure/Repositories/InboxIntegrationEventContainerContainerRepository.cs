@@ -3,9 +3,9 @@ using Shadowchats.Conversations.Application.Interfaces;
 
 namespace Shadowchats.Conversations.Infrastructure.Repositories;
 
-public class InboxIntegrationEventContainerRepository : IInboxIntegrationEventRepository
+public class InboxIntegrationEventContainerContainerRepository : IInboxIntegrationEventContainerRepository
 {
-    public InboxIntegrationEventContainerRepository(UnitOfWork unitOfWork)
+    public InboxIntegrationEventContainerContainerRepository(UnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
     }

@@ -22,5 +22,13 @@ public sealed class OutboxIntegrationEventContainer : BaseIntegrationEventContai
         guidGenerator.Generate(), Activity.Current?.Id ?? throw new BugException(), @event.EventType, @event,
         OutboxIntegrationEventStatus.Pending);
 
+    public void MarkAsPublished()
+    {
+        if (Status != OutboxIntegrationEventStatus.Pending)
+            throw new BugException();
+        
+        Status = OutboxIntegrationEventStatus.Published;
+    }
+
     public OutboxIntegrationEventStatus Status { get; private set; }
 }

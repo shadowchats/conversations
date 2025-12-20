@@ -10,11 +10,11 @@ namespace Shadowchats.Conversations.Application.DomainEventHandlers;
 public sealed class PaymentCompletedHandler : IRequestHandler<PaymentCompletedDomainEvent, Unit>
 {
     public PaymentCompletedHandler(IGuidGenerator guidGenerator, IOrderRepository orderRepository,
-        IOutboxIntegrationEventRepository outboxIntegrationEventRepository, IPersistenceContext persistenceContext)
+        IOutboxIntegrationEventContainerRepository outboxIntegrationEventContainerRepository, IPersistenceContext persistenceContext)
     {
         _guidGenerator = guidGenerator;
         _orderRepository = orderRepository;
-        _outboxIntegrationEventRepository = outboxIntegrationEventRepository;
+        _outboxIntegrationEventContainerRepository = outboxIntegrationEventContainerRepository;
         _persistenceContext = persistenceContext;
     }
 
@@ -28,7 +28,7 @@ public sealed class PaymentCompletedHandler : IRequestHandler<PaymentCompletedDo
         var orderPaidIntegrationEvent = new OrderPaidIntegrationEvent(notification.OrderId, notification.PaymentId);
         var outboxIntegrationEventContainer =
             OutboxIntegrationEventContainer.Create(_guidGenerator, orderPaidIntegrationEvent);
-        await _outboxIntegrationEventRepository.Add(outboxIntegrationEventContainer, cancellationToken);
+        await _outboxIntegrationEventContainerRepository.Add(outboxIntegrationEventContainer, cancellationToken);
 
         await _persistenceContext.SaveChanges(cancellationToken);
         
@@ -41,5 +41,5 @@ public sealed class PaymentCompletedHandler : IRequestHandler<PaymentCompletedDo
 
     private readonly IPersistenceContext _persistenceContext;
 
-    private readonly IOutboxIntegrationEventRepository _outboxIntegrationEventRepository;
+    private readonly IOutboxIntegrationEventContainerRepository _outboxIntegrationEventContainerRepository;
 }
