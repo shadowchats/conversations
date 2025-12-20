@@ -1,116 +1,63 @@
 using System.Collections.ObjectModel;
-using Shadowchats.Conversations.Domain.DomainEvents;
 using Shadowchats.Conversations.Domain.Entities;
+using Shadowchats.Conversations.Domain.Enums;
 using Shadowchats.Conversations.Domain.Exceptions;
+using Shadowchats.Conversations.Domain.Interfaces;
 using Shadowchats.Conversations.Domain.ValueObjects;
 
 namespace Shadowchats.Conversations.Domain.Aggregates;
 
-// Реализация в условиях Entity Framework
-public sealed class Order1 : BaseAggregate1
-{
-    private Order1()
-    {
-        Items = new ReadOnlyCollection<OrderItem1>(new List<OrderItem1>());
-        IsPaid = false;
-        IsShipped = false;
-        _totalPrice = new Lazy<Money1>(() =>
-            Items.Any() ? Items.Select(i => i.Total).Aggregate((a, b) => a + b) : Money1.None);
-    }
-
-    private Order1(Guid id, ReadOnlyCollection<OrderItem1> items, bool isPaid, bool isShipped) : base(id)
-    {
-        Items = items;
-        IsPaid = isPaid;
-        IsShipped = isShipped;
-        _totalPrice = new Lazy<Money1>(() => Items.Select(i => i.Total).Aggregate((a, b) => a + b));
-    }
-
-    public static Order1 Create(Guid id, IEnumerable<OrderItem1> items)
-    {
-        var itemsList = items.ToList();
-        if (itemsList.Count == 0)
-            throw new InvariantViolationException("Order must contain at least one item.");
-
-        var order = new Order1(id, itemsList.AsReadOnly(), false, false);
-
-        return order;
-    }
-
-    public void MarkAsPaid()
-    {
-        if (IsPaid)
-            throw new InvariantViolationException("Order is already paid.");
-
-        IsPaid = true;
-    }
-
-    public void Ship()
-    {
-        if (!IsPaid)
-            throw new InvariantViolationException("Cannot ship an unpaid order.");
-        if (IsShipped)
-            throw new InvariantViolationException("Order is already shipped.");
-
-        IsShipped = true;
-    }
-
-    public IReadOnlyList<OrderItem1> Items { get; private init; }
-
-    public bool IsPaid { get; private set; }
-
-    public bool IsShipped { get; private set; }
-
-    public Money1 TotalPrice => _totalPrice.Value;
-
-    private readonly Lazy<Money1> _totalPrice;
-}
-
-// Реализация в условиях вакуума
 public sealed class Order : BaseAggregate
 {
-    private Order(Guid id, ReadOnlyCollection<OrderItem> items, bool isPaid, bool isShipped) : base(id)
+    private Order()
     {
+        BuyerId = Guid.Empty;
+        Items = null!;
+        Status = 0;
+        _totalPrice = new Lazy<Money>(() =>
+            Items.Any() ? Items.Select(i => i.Total).Aggregate((a, b) => a + b) : Money.None);
+    }
+
+    private Order(Guid id, Guid buyerId, ReadOnlyCollection<OrderItem> items, OrderStatus status) : base(id)
+    {
+        BuyerId = buyerId;
         Items = items;
-        IsPaid = isPaid;
-        IsShipped = isShipped;
+        Status = status;
         _totalPrice = new Lazy<Money>(() => Items.Select(i => i.Total).Aggregate((a, b) => a + b));
     }
 
-    public static Order Create(Guid id, IEnumerable<OrderItem> items)
+    public static Order Create(IGuidGenerator guidGenerator, Guid buyerId, IEnumerable<OrderItem> items)
     {
         var itemsList = items.ToList();
         if (itemsList.Count == 0)
             throw new InvariantViolationException("Order must contain at least one item.");
 
-        var order = new Order(id, itemsList.AsReadOnly(), false, false);
+        var order = new Order(guidGenerator.Generate(), buyerId, itemsList.AsReadOnly(), OrderStatus.Created);
 
         return order;
     }
 
     public void MarkAsPaid()
     {
-        if (IsPaid)
-            throw new InvariantViolationException("Order is already paid.");
+        if (Status != OrderStatus.Created)
+            throw new InvariantViolationException($"Cannot mark order as paid when status is {Status}.");
 
-        IsPaid = true;
+        Status = OrderStatus.Paid;
     }
 
     public void Ship()
     {
-        if (!IsPaid)
-            throw new InvariantViolationException("Cannot ship an unpaid order.");
-        if (IsShipped)
-            throw new InvariantViolationException("Order is already shipped.");
+        if (Status != OrderStatus.Paid)
+            throw new InvariantViolationException($"Cannot ship order when status is {Status}.");
 
-        IsShipped = true;
+        Status = OrderStatus.Shipped;
     }
+    
+    public Guid BuyerId { get; private set; }
 
-    public IReadOnlyList<OrderItem> Items { get; }
+    public IReadOnlyList<OrderItem> Items { get; private set; }
 
-    public bool IsPaid { get; private set; }
-
-    public bool IsShipped { get; private set; }
+    public OrderStatus Status { get; private set; }
 
     public Money TotalPrice => _totalPrice.Value;
 

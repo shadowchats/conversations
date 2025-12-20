@@ -1,45 +1,19 @@
 using Shadowchats.Conversations.Domain.Exceptions;
+using Shadowchats.Conversations.Domain.Interfaces;
 using Shadowchats.Conversations.Domain.ValueObjects;
 
 namespace Shadowchats.Conversations.Domain.Entities;
 
-// Реализация в условиях Entity Framework
-public sealed class OrderItem1 : BaseEntity1
+public sealed class OrderItem : BaseEntity
 {
-    private OrderItem1()
+    private OrderItem()
     {
         ProductId = Guid.Empty;
         Quantity = 0;
-        Price = Money1.None;
-        _total = new Lazy<Money1>(() => Money1.Create(Price.Amount * Quantity, Price.Currency));
+        Price = null!;
+        _total = new Lazy<Money>(() => Money.Create(Price.Amount * Quantity, Price.Currency));
     }
     
-    private OrderItem1(Guid id, Guid productId, int quantity, Money1 price) : base(id)
-    {
-        ProductId = productId;
-        Quantity = quantity;
-        Price = price;
-        _total = new Lazy<Money1>(() => Money1.Create(Price.Amount * Quantity, Price.Currency));
-    }
-
-    public static OrderItem1 Create(Guid id, Guid productId, int quantity, Money1 price) => quantity <= 0
-        ? throw new InvariantViolationException("Quantity must be > 0.")
-        : new OrderItem1(id, productId, quantity, price);
-
-    public Guid ProductId { get; private init; }
-    
-    public int Quantity { get; private init; }
-    
-    public Money1 Price { get; private init; }
-
-    public Money1 Total => _total.Value;
-    
-    private readonly Lazy<Money1> _total;
-}
-
-// Реализация в условиях вакуума
-public sealed class OrderItem : BaseEntity
-{
     private OrderItem(Guid id, Guid productId, int quantity, Money price) : base(id)
     {
         ProductId = productId;
@@ -48,15 +22,15 @@ public sealed class OrderItem : BaseEntity
         _total = new Lazy<Money>(() => Money.Create(Price.Amount * Quantity, Price.Currency));
     }
 
-    public static OrderItem Create(Guid id, Guid productId, int quantity, Money price) => quantity <= 0
+    public static OrderItem Create(IGuidGenerator guidGenerator, Guid productId, int quantity, Money price) => quantity <= 0
         ? throw new InvariantViolationException("Quantity must be > 0.")
-        : new OrderItem(id, productId, quantity, price);
+        : new OrderItem(guidGenerator.Generate(), productId, quantity, price);
 
-    public Guid ProductId { get; }
+    public Guid ProductId { get; private init; }
     
-    public int Quantity { get; }
+    public int Quantity { get; private init; }
     
-    public Money Price { get; }
+    public Money Price { get; private init; }
 
     public Money Total => _total.Value;
     

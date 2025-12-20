@@ -9,7 +9,7 @@ public sealed class OutboxIntegrationEventContainer : BaseIntegrationEventContai
 {
     private OutboxIntegrationEventContainer() : base(Guid.Empty, null!, null!, null!)
     {
-        Status = OutboxIntegrationEventStatus.None;
+        Status = 0;
     }
 
     private OutboxIntegrationEventContainer(Guid id, string traceparent, string eventType, IIntegrationEvent @event,
@@ -18,7 +18,9 @@ public sealed class OutboxIntegrationEventContainer : BaseIntegrationEventContai
         Status = status;
     }
 
-    public static OutboxIntegrationEventContainer Create(IGuidGenerator guidGenerator, IIntegrationEvent @event) => new(guidGenerator.Generate(), Activity.Current?.Id ?? throw new BugException(), @event.EventType, @event, OutboxIntegrationEventStatus.Pending);
+    public static OutboxIntegrationEventContainer Create(IGuidGenerator guidGenerator, IIntegrationEvent @event) => new(
+        guidGenerator.Generate(), Activity.Current?.Id ?? throw new BugException(), @event.EventType, @event,
+        OutboxIntegrationEventStatus.Pending);
 
     public OutboxIntegrationEventStatus Status { get; private set; }
 }

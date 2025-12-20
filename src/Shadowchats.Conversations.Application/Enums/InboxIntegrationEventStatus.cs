@@ -1,7 +1,7 @@
 namespace Shadowchats.Conversations.Application.Enums;
 
-public enum OutboxIntegrationEventStatus : byte
+public enum InboxIntegrationEventStatus : byte
 {
     Pending = 0,
-    Published = 1
+    Processed = 1
 }

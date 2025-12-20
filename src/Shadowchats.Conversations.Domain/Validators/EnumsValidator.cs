@@ -7,13 +7,13 @@ public static class EnumsValidator
 {
     public static void EnsureValid(Currency currency)
     {
-        if (currency is < Currency.Rub or > Currency.Usd)
+        if (currency > Currency.Usd)
             throw new InvariantViolationException("Unknown currency.");
     }
     
     public static void EnsureValid(PaymentMethod paymentMethod)
     {
-        if (paymentMethod is < PaymentMethod.CryptoTransfer or > PaymentMethod.FiatTransfer)
+        if (paymentMethod > PaymentMethod.FiatTransfer)
             throw new InvariantViolationException("Unknown payment method.");
     }
 }

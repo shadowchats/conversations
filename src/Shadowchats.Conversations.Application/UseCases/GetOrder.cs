@@ -19,9 +19,7 @@ public sealed record GetOrderResponse
 
     public required List<OrderItemDto> Items { get; init; }
 
-    public required bool IsPaid { get; init; }
-
-    public required bool IsShipped { get; init; }
+    public required string Status { get; init; }
 
     public required decimal TotalAmount { get; init; }
 
@@ -62,7 +60,7 @@ public sealed class GetOrderHandler : IRequestHandler<GetOrderQuery, GetOrderRes
 
         return new GetOrderResponse
         {
-            OrderId = order.Id, Items = items, IsPaid = order.IsPaid, IsShipped = order.IsShipped,
+            OrderId = order.Id, Items = items, Status = EnumsMapper.MapOrderStatus(order.Status),
             TotalAmount = order.TotalPrice.Amount, Currency = EnumsMapper.MapCurrency(order.TotalPrice.Currency)
         };
     }
