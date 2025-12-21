@@ -1,5 +1,5 @@
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Application.IntegrationEvents;
 using Shadowchats.Conversations.Application.Interfaces;
 
@@ -16,12 +16,21 @@ public class OutboxIntegrationEventContainerContainerRepository : IOutboxIntegra
         _unitOfWork.DbContext.OutboxIntegrationEventContainers.AddAsync(integrationEventContainer, cancellationToken)
             .AsTask();
 
-    public Task<List<OutboxIntegrationEventContainer>> FindAll(
-        Expression<Func<OutboxIntegrationEventContainer, bool>> predicate, CancellationToken cancellationToken,
-        params Expression<Func<OutboxIntegrationEventContainer, object>>[] includes) => includes
-        .Aggregate<Expression<Func<OutboxIntegrationEventContainer, object>>,
-            IQueryable<OutboxIntegrationEventContainer>>(_unitOfWork.DbContext.OutboxIntegrationEventContainers,
-            (current, include) => current.Include(include)).Where(predicate).ToListAsync(cancellationToken);
+    public Task<List<OutboxIntegrationEventContainer>> TakePendingBatch(int batchSize,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+                           SELECT *
+                           FROM "OutboxIntegrationEventContainers"
+                           WHERE "Status" = {0}
+                           ORDER BY "CreatedAt"
+                           FOR UPDATE SKIP LOCKED
+                           LIMIT {1};
+                           """;
+
+        return _unitOfWork.DbContext.OutboxIntegrationEventContainers
+            .FromSqlRaw(sql, OutboxIntegrationEventStatus.Pending, batchSize).ToListAsync(cancellationToken);
+    }
 
     private readonly UnitOfWork _unitOfWork;
 }

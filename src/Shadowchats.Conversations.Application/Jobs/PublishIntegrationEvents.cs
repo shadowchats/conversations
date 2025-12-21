@@ -1,12 +1,11 @@
 using MediatR;
-using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Application.Interfaces;
 
 namespace Shadowchats.Conversations.Application.Jobs;
 
-public sealed record PublishIntegrationEventsJob : IRequest<Unit>;
+public sealed record PublishIntegrationEventsJob : IRequest<int>;
 
-public sealed class PublishIntegrationEventsHandler : IRequestHandler<PublishIntegrationEventsJob, Unit>
+public sealed class PublishIntegrationEventsHandler : IRequestHandler<PublishIntegrationEventsJob, int>
 {
     public PublishIntegrationEventsHandler(IOutboxIntegrationEventContainerRepository outboxIntegrationEventContainerRepository, IPersistenceContext persistenceContext)
     {
@@ -14,12 +13,11 @@ public sealed class PublishIntegrationEventsHandler : IRequestHandler<PublishInt
         _persistenceContext = persistenceContext;
     }
 
-    public async Task<Unit> Handle(PublishIntegrationEventsJob request, CancellationToken cancellationToken)
+    public async Task<int> Handle(PublishIntegrationEventsJob _, CancellationToken cancellationToken)
     {
-        // TODO: *ОБЯЗАТЕЛЬНО* реализовать `FOR UPDATE SKIP LOCKED` и лимитирование подтягиваемых событий (допустим, по сотне)
-        var pendingEvents =
-            await _outboxIntegrationEventContainerRepository.FindAll(
-                c => c.Status == OutboxIntegrationEventStatus.Pending, cancellationToken);
+        var pendingEvents = await _outboxIntegrationEventContainerRepository.TakePendingBatch(100, cancellationToken);
+        if (pendingEvents.Count == 0)
+            return 0;
         
         //_integrationEventBroker.Publish(pendingEvents);
         
@@ -27,7 +25,7 @@ public sealed class PublishIntegrationEventsHandler : IRequestHandler<PublishInt
 
         await _persistenceContext.SaveChanges(cancellationToken);
         
-        return Unit.Value;
+        return pendingEvents.Count;
     }
     
     private readonly IOutboxIntegrationEventContainerRepository _outboxIntegrationEventContainerRepository;

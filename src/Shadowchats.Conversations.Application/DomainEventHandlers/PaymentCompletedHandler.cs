@@ -9,10 +9,14 @@ namespace Shadowchats.Conversations.Application.DomainEventHandlers;
 
 public sealed class PaymentCompletedHandler : IRequestHandler<PaymentCompletedDomainEvent, Unit>
 {
-    public PaymentCompletedHandler(IGuidGenerator guidGenerator, IOrderRepository orderRepository,
-        IOutboxIntegrationEventContainerRepository outboxIntegrationEventContainerRepository, IPersistenceContext persistenceContext)
+    public PaymentCompletedHandler(IGuidGenerator guidGenerator, IDateTimeProvider dateTimeProvider,
+        ITraceparentProvider traceparentProvider, IOrderRepository orderRepository,
+        IOutboxIntegrationEventContainerRepository outboxIntegrationEventContainerRepository,
+        IPersistenceContext persistenceContext)
     {
         _guidGenerator = guidGenerator;
+        _dateTimeProvider = dateTimeProvider;
+        _traceparentProvider = traceparentProvider;
         _orderRepository = orderRepository;
         _outboxIntegrationEventContainerRepository = outboxIntegrationEventContainerRepository;
         _persistenceContext = persistenceContext;
@@ -26,16 +30,20 @@ public sealed class PaymentCompletedHandler : IRequestHandler<PaymentCompletedDo
         order.MarkAsPaid();
 
         var orderPaidIntegrationEvent = new OrderPaidIntegrationEvent(notification.OrderId, notification.PaymentId);
-        var outboxIntegrationEventContainer =
-            OutboxIntegrationEventContainer.Create(_guidGenerator, orderPaidIntegrationEvent);
+        var outboxIntegrationEventContainer = OutboxIntegrationEventContainer.Create(_guidGenerator, _dateTimeProvider,
+            _traceparentProvider, orderPaidIntegrationEvent);
         await _outboxIntegrationEventContainerRepository.Add(outboxIntegrationEventContainer, cancellationToken);
 
         await _persistenceContext.SaveChanges(cancellationToken);
-        
+
         return Unit.Value;
     }
 
     private readonly IGuidGenerator _guidGenerator;
+
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    private readonly ITraceparentProvider _traceparentProvider;
 
     private readonly IOrderRepository _orderRepository;
 
