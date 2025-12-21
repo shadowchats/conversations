@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace Shadowchats.Conversations.Application.IntegrationEvents;
 
 public abstract class BaseIntegrationEventContainer

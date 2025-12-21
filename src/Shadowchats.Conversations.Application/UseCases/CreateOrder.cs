@@ -10,7 +10,9 @@ using Shadowchats.Conversations.Domain.ValueObjects;
 
 namespace Shadowchats.Conversations.Application.UseCases;
 
-[UnitOfWork(DataAccessMode.ReadWrite, TransactionMode.ReadCommitted)]
+[TracingDecorator]
+[LoggingDecorator]
+[UnitOfWorkDecorator(DataAccessMode.ReadWrite, TransactionMode.ReadCommitted)]
 public sealed record CreateOrderCommand : IRequest<CreateOrderResponse>
 {
     public required Guid BuyerId { get; init; }

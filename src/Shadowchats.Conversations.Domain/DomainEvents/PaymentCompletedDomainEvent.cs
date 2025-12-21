@@ -2,7 +2,7 @@ using MediatR;
 
 namespace Shadowchats.Conversations.Domain.DomainEvents;
 
-public sealed record PaymentCompletedDomainEvent : IRequest<Unit>
+public sealed record PaymentCompletedDomainEvent : INotification
 {
     public PaymentCompletedDomainEvent(Guid paymentId, Guid orderId)
     {

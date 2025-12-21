@@ -7,7 +7,9 @@ using Shadowchats.Conversations.Domain.Exceptions;
 
 namespace Shadowchats.Conversations.Application.UseCases;
 
-[UnitOfWork(DataAccessMode.ReadOnly, TransactionMode.None)]
+[TracingDecorator]
+[LoggingDecorator]
+[UnitOfWorkDecorator(DataAccessMode.ReadOnly, TransactionMode.None)]
 public sealed record GetOrderQuery : IRequest<GetOrderResponse>
 {
     public required Guid OrderId { get; init; }

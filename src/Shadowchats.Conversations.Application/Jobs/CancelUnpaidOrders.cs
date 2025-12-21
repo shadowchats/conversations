@@ -15,7 +15,7 @@ public sealed class CancelUnpaidOrdersHandler : IRequestHandler<CancelUnpaidOrde
         _orderRepository = orderRepository;
         _persistenceContext = persistenceContext;
     }
-
+    
     public async Task<Unit> Handle(CancelUnpaidOrdersJob request, CancellationToken cancellationToken)
     {
         var threshold = _dateTimeProvider.UtcNow - TimeSpan.FromHours(24);

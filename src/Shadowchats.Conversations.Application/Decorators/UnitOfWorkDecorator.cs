@@ -1,4 +1,5 @@
 using MediatR;
+using Shadowchats.Conversations.Application.Attributes;
 using Shadowchats.Conversations.Application.Interfaces;
 
 namespace Shadowchats.Conversations.Application.Decorators;
@@ -12,7 +13,11 @@ public class UnitOfWorkDecorator<TRequest, TResponse> : IPipelineBehavior<TReque
     
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        await _unitOfWork.Begin(request.GetType(), cancellationToken);
+        var attribute = AttributeCache.Get<UnitOfWorkDecoratorAttribute>(typeof(TRequest));
+        if (attribute == null)
+            return await next(cancellationToken);
+        
+        await _unitOfWork.Begin(attribute.Options, cancellationToken);
 
         try
         {

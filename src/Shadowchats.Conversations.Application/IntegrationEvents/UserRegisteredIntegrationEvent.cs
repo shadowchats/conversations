@@ -1,9 +1,14 @@
 using MediatR;
+using Shadowchats.Conversations.Application.Attributes;
+using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Domain.Aggregates;
 
 namespace Shadowchats.Conversations.Application.IntegrationEvents;
 
+[TracingDecorator]
+[LoggingDecorator]
+[UnitOfWorkDecorator(DataAccessMode.ReadWrite, TransactionMode.ReadCommitted)]
 public sealed record UserRegisteredIntegrationEvent : IIntegrationEvent
 {
     private UserRegisteredIntegrationEvent()

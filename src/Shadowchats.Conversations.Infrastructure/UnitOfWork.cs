@@ -1,9 +1,7 @@
-using System.Collections.Concurrent;
 using System.Data;
-using System.Reflection;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Shadowchats.Conversations.Application.Attributes;
+using Shadowchats.Conversations.Application.Common;
 using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Domain.Aggregates;
@@ -16,8 +14,48 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
     private enum State : byte
     {
         NotStarted = 0,
-        Begun = 1,
-        Completed = 2,
+        Begun = 1
+    }
+    
+    private enum ApplicationDbContextType : byte
+    {
+        ReadOnly = 0,
+        ReadWrite = 1
+    }
+    
+    private sealed record Options
+    {
+        public static Options Map(UnitOfWorkOptions applicationOptions)
+        {
+            var dbContextType = applicationOptions.DataAccessMode switch
+            {
+                DataAccessMode.ReadOnly => ApplicationDbContextType.ReadOnly,
+                DataAccessMode.ReadWrite => ApplicationDbContextType.ReadWrite,
+                _ => throw new BugException()
+            };
+            var isolationLevel = applicationOptions.TransactionMode switch
+            {
+                TransactionMode.None => IsolationLevel.Unspecified,
+                TransactionMode.ReadCommitted => IsolationLevel.ReadCommitted,
+                TransactionMode.RepeatableRead => IsolationLevel.RepeatableRead,
+                TransactionMode.Serializable => IsolationLevel.Serializable,
+                _ => throw new BugException()
+            };
+            var useTransaction = applicationOptions.TransactionMode != TransactionMode.None;
+
+            return new Options
+            {
+                DbContextType = dbContextType,
+                UseTransaction = useTransaction,
+                IsolationLevel = isolationLevel
+            };
+        }
+
+        public required ApplicationDbContextType DbContextType { get; init; }
+
+        public required bool UseTransaction { get; init; }
+
+        public required IsolationLevel IsolationLevel { get; init; }
     }
 
     public UnitOfWork(IDbContextFactory<ReadOnlyApplicationDbContext> readOnlyFactory,
@@ -31,19 +69,22 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
         _isDisposed = false;
     }
 
-    public async Task Begin(Type requestType, CancellationToken cancellationToken)
+    public async Task Begin(UnitOfWorkOptions applicationOptions, CancellationToken cancellationToken)
     {
         EnsureNotDisposed();
 
         if (_state != State.NotStarted)
             throw new BugException();
+        
+        if ((applicationOptions.DataAccessMode == DataAccessMode.ReadOnly) ^ (applicationOptions.TransactionMode == TransactionMode.None))
+            throw new BugException();
 
         BaseApplicationDbContext? dbContext = null;
         try
         {
-            var options = UnitOfWorkOptionsProvider.GetFor(requestType);
+            var infrastructureOptions = Options.Map(applicationOptions);
             
-            dbContext = options.DbContextType switch
+            dbContext = infrastructureOptions.DbContextType switch
             {
                 ApplicationDbContextType.ReadOnly =>
                     await _readOnlyFactory.CreateDbContextAsync(cancellationToken),
@@ -52,8 +93,8 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
                 _ => throw new BugException()
             };
 
-            if (options.UseTransaction)
-                await dbContext.Database.BeginTransactionAsync(options.IsolationLevel, cancellationToken);
+            if (infrastructureOptions.UseTransaction)
+                await dbContext.Database.BeginTransactionAsync(infrastructureOptions.IsolationLevel, cancellationToken);
             
             _dbContext = dbContext;
             _state = State.Begun;
@@ -79,7 +120,7 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
         if (_dbContext!.Database.CurrentTransaction is not null)
             await _dbContext.Database.CommitTransactionAsync(cancellationToken);
 
-        _state = State.Completed;
+        _state = State.NotStarted;
 
         return;
 
@@ -117,7 +158,7 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
         if (_dbContext!.Database.CurrentTransaction is not null)
             await _dbContext.Database.RollbackTransactionAsync(cancellationToken);
 
-        _state = State.Completed;
+        _state = State.NotStarted;
     }
 
     private void EnsureNotDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, nameof(UnitOfWork));
@@ -154,59 +195,4 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
     private BaseApplicationDbContext? _dbContext;
 
     private bool _isDisposed;
-}
-
-file sealed record UnitOfWorkOptions
-{
-    public static UnitOfWorkOptions Create(UnitOfWorkAttribute attribute)
-    {
-        var dbContextType = attribute.DataAccess switch
-        {
-            DataAccessMode.ReadOnly => ApplicationDbContextType.ReadOnly,
-            DataAccessMode.ReadWrite => ApplicationDbContextType.ReadWrite,
-            _ => throw new BugException()
-        };
-        var isolationLevel = attribute.Transaction switch
-        {
-            TransactionMode.None => IsolationLevel.Unspecified,
-            TransactionMode.ReadCommitted => IsolationLevel.ReadCommitted,
-            TransactionMode.RepeatableRead => IsolationLevel.RepeatableRead,
-            TransactionMode.Serializable => IsolationLevel.Serializable,
-            _ => throw new BugException()
-        };
-        var useTransaction = attribute.Transaction != TransactionMode.None;
-
-        return new UnitOfWorkOptions
-        {
-            DbContextType = dbContextType,
-            UseTransaction = useTransaction,
-            IsolationLevel = isolationLevel
-        };
-    }
-
-    public required ApplicationDbContextType DbContextType { get; init; }
-
-    public required bool UseTransaction { get; init; }
-
-    public required IsolationLevel IsolationLevel { get; init; }
-}
-
-file static class UnitOfWorkOptionsProvider
-{
-    public static UnitOfWorkOptions GetFor(Type requestType) => Cache.GetOrAdd(requestType, Build);
-
-    private static UnitOfWorkOptions Build(Type requestType)
-    {
-        var attribute = requestType.GetCustomAttribute<UnitOfWorkAttribute>();
-        
-        return attribute is null ? throw new BugException() : UnitOfWorkOptions.Create(attribute);
-    }
-
-    private static readonly ConcurrentDictionary<Type, UnitOfWorkOptions> Cache = new();
-}
-
-file enum ApplicationDbContextType : byte
-{
-    ReadOnly = 0,
-    ReadWrite = 1
 }

@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Shadowchats.Conversations.Application.Attributes;
 using Shadowchats.Conversations.Domain.Exceptions;
 
 namespace Shadowchats.Conversations.Application.Decorators;
@@ -14,6 +15,9 @@ public sealed class LoggingDecorator<TRequest, TResponse> : IPipelineBehavior<TR
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
+        if (AttributeCache.Get<LoggingDecoratorAttribute>(typeof(TRequest)) == null)
+            return await next(cancellationToken);
+        
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Stage: {Stage}; RequestName: {RequestName}; RequestPayload: {@RequestPayload}.",
                 "Start", _requestName, request);

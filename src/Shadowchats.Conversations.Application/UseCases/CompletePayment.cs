@@ -6,7 +6,9 @@ using Shadowchats.Conversations.Domain.Exceptions;
 
 namespace Shadowchats.Conversations.Application.UseCases;
 
-[UnitOfWork(DataAccessMode.ReadWrite, TransactionMode.ReadCommitted)]
+[TracingDecorator]
+[LoggingDecorator]
+[UnitOfWorkDecorator(DataAccessMode.ReadWrite, TransactionMode.ReadCommitted)]
 public sealed record CompletePaymentCommand : IRequest<Unit>
 {
     public required Guid PaymentId { get; init; }

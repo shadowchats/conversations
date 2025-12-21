@@ -1,8 +1,10 @@
+using Shadowchats.Conversations.Application.Common;
+
 namespace Shadowchats.Conversations.Application.Interfaces;
 
 public interface IUnitOfWork
 {
-    Task Begin(Type requestType, CancellationToken cancellationToken);
+    Task Begin(UnitOfWorkOptions applicationOptions, CancellationToken cancellationToken);
 
     Task Commit(CancellationToken cancellationToken);
 
