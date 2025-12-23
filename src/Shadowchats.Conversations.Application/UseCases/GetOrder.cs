@@ -50,7 +50,7 @@ public sealed class GetOrderHandler : IRequestHandler<GetOrderQuery, GetOrderRes
 
     public async Task<GetOrderResponse> Handle(GetOrderQuery request, CancellationToken cancellationToken)
     {
-        var order = await _orderRepository.Find(o => o.Id == request.OrderId, cancellationToken, o => o.Items);
+        var order = await _orderRepository.Find(o => o.Id == request.OrderId, cancellationToken, includes: o => o.Items);
         if (order == null)
             throw new InvariantViolationException("Order does not exist.");
 
