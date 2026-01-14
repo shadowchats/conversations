@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Domain.Exceptions;
 
-namespace Shadowchats.Conversations.Infrastructure;
+namespace Shadowchats.Conversations.Infrastructure.Providers;
 
 public sealed class TraceparentProvider : ITraceparentProvider
 {

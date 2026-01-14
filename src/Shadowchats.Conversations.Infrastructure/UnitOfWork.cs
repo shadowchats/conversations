@@ -6,6 +6,7 @@ using Shadowchats.Conversations.Application.Enums;
 using Shadowchats.Conversations.Application.Interfaces;
 using Shadowchats.Conversations.Domain.Aggregates;
 using Shadowchats.Conversations.Domain.Exceptions;
+using Shadowchats.Conversations.Infrastructure.Hooks;
 
 namespace Shadowchats.Conversations.Infrastructure;
 
@@ -58,12 +59,12 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
         public required IsolationLevel IsolationLevel { get; init; }
     }
 
-    public UnitOfWork(IDbContextFactory<ReadOnlyApplicationDbContext> readOnlyFactory,
-        IDbContextFactory<ReadWriteApplicationDbContext> readWriteFactory, IMediator mediator)
+    public UnitOfWork(IDbContextFactory<ReadOnlyApplicationDbContext> readOnlyFactory, IDbContextFactory<ReadWriteApplicationDbContext> readWriteFactory, IMediator mediator, AfterCommitHook afterCommitHook)
     {
         _readOnlyFactory = readOnlyFactory;
         _readWriteFactory = readWriteFactory;
         _mediator = mediator;
+        _afterCommitHook = afterCommitHook;
         _state = State.NotStarted;
         _dbContext = null;
         _isDisposed = false;
@@ -119,6 +120,8 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
 
         if (_dbContext!.Database.CurrentTransaction is not null)
             await _dbContext.Database.CommitTransactionAsync(cancellationToken);
+        
+        await _afterCommitHook.ExecuteAsync(cancellationToken);
 
         _state = State.NotStarted;
 
@@ -189,6 +192,8 @@ public sealed class UnitOfWork : IUnitOfWork, IAsyncDisposable
     private readonly IDbContextFactory<ReadWriteApplicationDbContext> _readWriteFactory;
 
     private readonly IMediator _mediator;
+    
+    private readonly AfterCommitHook _afterCommitHook;
 
     private State _state;
 

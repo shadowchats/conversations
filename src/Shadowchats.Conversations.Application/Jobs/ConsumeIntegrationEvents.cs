@@ -23,7 +23,7 @@ public class ConsumeIntegrationEventsHandler : IRequestHandler<ConsumeIntegratio
          * await _inboxIntegrationEventContainerRepository.Add(events, cancellationToken);
          * await _persistenceContext.SaveChanges(cancellationToken);
          *
-         * _integrationEventBroker.Commit(cancellationToken);
+         * _persistenceContext.AfterCommit(ct => _integrationEventBroker.Commit(ct));
          *
          * return events.Count;
          */

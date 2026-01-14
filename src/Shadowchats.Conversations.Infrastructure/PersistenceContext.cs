@@ -1,12 +1,14 @@
 using Shadowchats.Conversations.Application.Interfaces;
+using Shadowchats.Conversations.Infrastructure.Hooks;
 
 namespace Shadowchats.Conversations.Infrastructure;
 
 public sealed class PersistenceContext : IPersistenceContext
 {
-    public PersistenceContext(UnitOfWork unitOfWork)
+    public PersistenceContext(UnitOfWork unitOfWork, AfterCommitHook afterCommitHook)
     {
         _unitOfWork = unitOfWork;
+        _afterCommitHook = afterCommitHook;
     }
     
     public async Task SaveChanges(CancellationToken cancellationToken)
@@ -32,6 +34,10 @@ public sealed class PersistenceContext : IPersistenceContext
         
         await _unitOfWork.DbContext.SaveChangesAsync(cancellationToken);
     }
-    
+
+    public void AfterCommit(Func<CancellationToken, Task> action) => _afterCommitHook.Register(action);
+
     private readonly UnitOfWork _unitOfWork;
+    
+    private readonly AfterCommitHook _afterCommitHook;
 }
